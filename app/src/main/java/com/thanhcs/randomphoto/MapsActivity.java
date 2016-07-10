@@ -32,9 +32,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.gson.GsonBuilder;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
@@ -44,13 +47,16 @@ import com.thanhcs.randomphoto.api.Parse;
 import com.thanhcs.randomphoto.entities.GetPhoto;
 import com.thanhcs.randomphoto.entities.Photo;
 import com.thanhcs.randomphoto.entities.PhotoMapItems;
+import com.thanhcs.randomphoto.entities.SampleJob;
 import com.thanhcs.randomphoto.service.GPSTracker;
 import com.thanhcs.randomphoto.service.PlaceProvider;
 import com.thanhcs.randomphoto.utils.Check_Connection;
+import com.thanhcs.randomphoto.utils.JobRenderer;
 
 import java.io.File;
 import java.io.Reader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -63,7 +69,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     int LIMIT = 100;
     int PAGE = 1;
     ProgressBar progressBar2;
-    ClusterManager<PhotoMapItems> mClusterManager;
+    LatLngBounds.Builder builder;
+    List<Marker> markersList;
+
+    private ClusterManager<PhotoMapItems> mClusterManager;
+    private ArrayList<PhotoMapItems> jobs = new ArrayList<PhotoMapItems>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +83,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         progressBar2 = (ProgressBar) findViewById(R.id.progressBar2);
+        markersList = new ArrayList<Marker>();
         mapFragment.getMapAsync(this);
         if (getIntent() != null)
             handleIntent(getIntent());
@@ -124,6 +135,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setAllGesturesEnabled(true);
         mMap.setOnMarkerClickListener(this);
         // Add a marker in Sydney and move the camera
+
         updateLocation();
         new LoadPhoto().execute();
 
@@ -222,12 +234,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 //        // Initialize the manager with the context and the map.
 //        // (Activity extends context, so we can pass 'this' in the constructor.)
         mClusterManager = new ClusterManager<PhotoMapItems>(this, mMap);
-
+//        mClusterManager.setOnClusterItemClickListener(this);
         // Point the map's listeners at the listeners implemented by the cluster
         // manager.
         mMap.setOnCameraChangeListener(mClusterManager);
         mMap.setOnMarkerClickListener(mClusterManager);
-
+        mClusterManager
+                .setOnClusterClickListener(new ClusterManager.OnClusterClickListener<PhotoMapItems>() {
+                    @Override
+                    public boolean onClusterClick(final Cluster<PhotoMapItems> cluster) {
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                        cluster.getPosition(), (float) Math.floor(mMap
+                                                .getCameraPosition().zoom + 1)), 300,
+                                null);
+                        return true;
+                    }
+                });
         // Add cluster items (markers) to the cluster manager.
         addItems();
     }
@@ -243,8 +265,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             double offset = i / 60d;
             lat = lat + offset;
             lng = lng + offset;
-            PhotoMapItems offsetItem = new PhotoMapItems(lat, lng);
-            mClusterManager.addItem(offsetItem);
+            //PhotoMapItems offsetItem = new PhotoMapItems(lat, lng);
+            //mClusterManager.addItem(offsetItem);
         }
     }
 
@@ -256,6 +278,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         overridePendingTransition(0,0);
         return false;
     }
+
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
@@ -299,37 +322,105 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         protected void onPostExecute(Void aVoid) {
             for(int i = 0 ; i < listPhoto.size() ; i++){
-                LatLng latLng = new LatLng(Double.parseDouble(listPhoto.get(i).getLat()), Double.parseDouble(listPhoto.get(i).getLon()));
-                showMyLocationPic(latLng , listPhoto.get(i).getPath());
+//                Marker m = mMap.addMarker(new MarkerOptions().position(new LatLng(
+//                        Double.parseDouble(listPhoto.get(i).getLat()), Double.parseDouble(listPhoto.get(i).getLon())))
+//                        .snippet(listPhoto.get(i).getPath()));
+//                markersList.add(m);
+                PhotoMapItems p = new PhotoMapItems(
+                        Double.parseDouble(listPhoto.get(i).getLat()), Double.parseDouble(listPhoto.get(i).getLon())
+                        ,listPhoto.get(i).getPath());
+                jobs.add(p);
             }
+
+            mClusterManager = new ClusterManager<PhotoMapItems>(MapsActivity.this, mMap);
+            mClusterManager.setRenderer(new JobRenderer(MapsActivity.this, mMap, mClusterManager));
+            mMap.setOnCameraChangeListener(mClusterManager);
+            mMap.setOnMarkerClickListener(mClusterManager);
+            mClusterManager.setOnClusterItemClickListener(new ClusterManager.OnClusterItemClickListener<PhotoMapItems>() {
+                @Override
+                public boolean onClusterItemClick(PhotoMapItems photoMapItems) {
+                    Toast.makeText(MapsActivity.this, "Latitude " + photoMapItems.getPosition().latitude, Toast.LENGTH_LONG).show();
+                    return false;
+                }
+            });
+
+            mClusterManager
+                    .setOnClusterClickListener(new ClusterManager.OnClusterClickListener<PhotoMapItems>() {
+                        @Override
+                        public boolean onClusterClick(final Cluster<PhotoMapItems> cluster) {
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                            cluster.getPosition(), (float) Math.floor(mMap
+                                                    .getCameraPosition().zoom + 4)), 300,
+                                    null);
+                            return true;
+                        }
+                    });
+
+            for(final PhotoMapItems job: jobs){
+                mClusterManager.addItem(job);
+            }
+            mClusterManager.cluster();
+
+
+
+            /*builder = new LatLngBounds.Builder();
+            int size = 80;
+            for (final Marker m : markersList) {
+                String url = m.getSnippet();
+                Picasso.with(MapsActivity.this).load(url).resize(size, size).placeholder(R.drawable.holder).into(new Target() {
+
+                    @Override
+                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        BitmapDescriptor bitmapMarker = BitmapDescriptorFactory.fromBitmap(bitmap);
+                        //create marker option
+                        if (bitmap != null)
+                            m.setIcon(bitmapMarker);
+                        builder.include(m.getPosition());
+                    }
+
+                    @Override
+                    public void onBitmapFailed(Drawable errorDrawable) {
+
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                    }
+                });
+
+            }*/
+
             progressBar2.setVisibility(View.GONE);
             super.onPostExecute(aVoid);
         }
 
         private void showMyLocationPic(final LatLng latLng, final String url) {
             int size = 80;
-            Picasso.with(MapsActivity.this).load(url).resize(size, size).placeholder(R.drawable.holder).into(new Target() {
+            Target target = new Target() {
 
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                     BitmapDescriptor bitmapMarker = BitmapDescriptorFactory.fromBitmap(bitmap);
                     //create marker option
                     if (bitmap != null)
-                       mMap.addMarker(new MarkerOptions().position(latLng).icon(bitmapMarker).snippet(url));
+                        mMap.addMarker(new MarkerOptions().position(latLng).icon(bitmapMarker).snippet(url));
                     else
-                       mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.holder)).snippet(url));
+                        mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.holder)).snippet(url));
                 }
 
                 @Override
                 public void onBitmapFailed(Drawable errorDrawable) {
-                   mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.holder)).snippet(url));
+                    mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.holder)).snippet(url));
                 }
 
                 @Override
                 public void onPrepareLoad(Drawable placeHolderDrawable) {
 
                 }
-            });
+            };
+            Picasso.with(MapsActivity.this).load(url).resize(size, size).placeholder(R.drawable.holder).into(target);
         }
+
     }
 }

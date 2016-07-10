@@ -19,6 +19,8 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.gson.GsonBuilder;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.thanhcs.randomphoto.adapter.RecycleRandom;
 import com.thanhcs.randomphoto.api.API;
 import com.thanhcs.randomphoto.api.Parse;
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     ProgressBar progressBar2;
     OnResultsScrollListener onResultsScrollListener;
     StaggeredGridLayoutManager llm;
+    public static ImageLoader mImageLoader;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         initiateRefresh();
+        getImageLoader();
         findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -74,16 +78,16 @@ public class MainActivity extends AppCompatActivity {
     }
 });
 
-        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_FINE_LOCATION);
-
-            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-            // app-defined int constant
-
-            return;
-        }
+//        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+//                != PackageManager.PERMISSION_GRANTED) {
+//            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+//                    MY_PERMISSIONS_REQUEST_FINE_LOCATION);
+//
+//            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+//            // app-defined int constant
+//
+//            return;
+//        }
         GPSTracker mGPS = new GPSTracker(this);
         LAT = mGPS.getLatitude();
         LON = mGPS.getLongitude();
@@ -287,5 +291,13 @@ public class MainActivity extends AppCompatActivity {
             new LoadPhoto(PAGE).execute();
             Log.d("myTag", "LAST-------HERE------PAGE ");
         }
+    }
+
+    public ImageLoader getImageLoader() {
+        if (mImageLoader == null) {
+            mImageLoader = ImageLoader.getInstance();
+            mImageLoader.init(ImageLoaderConfiguration.createDefault(this));
+        }
+        return this.mImageLoader;
     }
 }

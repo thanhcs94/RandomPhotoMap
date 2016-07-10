@@ -8,11 +8,15 @@ import com.google.maps.android.clustering.ClusterItem;
  */
 public class PhotoMapItems implements ClusterItem {
     private final LatLng mPosition;
-
-    public PhotoMapItems(double lat, double lng) {
+    String url;
+    public PhotoMapItems(double lat, double lng , String url) {
         mPosition = new LatLng(lat, lng);
+        this.url = url;
     }
 
+    public String getUrl(){
+        return  url;
+    }
     @Override
     public LatLng getPosition() {
         return mPosition;

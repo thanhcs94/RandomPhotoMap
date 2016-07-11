@@ -46,7 +46,7 @@ public class RecycleRandom extends RecyclerView.Adapter<RecycleRandom.BookViewHo
         mContext.getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
         int width = displaymetrics.widthPixels;
         int size = 0;
-        size = width/2-5;
+        size = width/3-5;
             Picasso.with(mContext)
                     .load(book.get(i).getPath())
                     .resize(size, size)
@@ -76,6 +76,7 @@ public class RecycleRandom extends RecyclerView.Adapter<RecycleRandom.BookViewHo
         @Override
         public void onClick(View view) {
             Intent  i = new Intent(mContext , ViewFullPhotoActivity.class);
+            i.putExtra("type", "link");
             i.putExtra("link", book.get(getLayoutPosition()).getPath());
             mContext.startActivity(i);
             mContext.overridePendingTransition(0,0);

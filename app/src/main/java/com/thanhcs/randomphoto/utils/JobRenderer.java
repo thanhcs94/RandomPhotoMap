@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.clustering.Cluster;
 import com.google.maps.android.clustering.ClusterItem;
@@ -80,28 +81,33 @@ public class JobRenderer extends DefaultClusterRenderer<PhotoMapItems> {
 //        MainActivity.mImageLoader.displayImage(iterator.next().getUrl(), clusterImageView, options);
 //        Bitmap icon = clusterIconGenerator.makeIcon(iterator.next().getUrl());
 //        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(icon));
+
         int size = 60;
-        Picasso.with(context).load(iterator.next().getUrl()).resize(size, size).placeholder(R.drawable.holder).into(new Target() {
-
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                BitmapDescriptor bitmapMarker = BitmapDescriptorFactory.fromBitmap(bitmap);
-                //create marker option
-                if (bitmap != null)
-                    clusterImageView.setImageBitmap(bitmap);
-                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap)).title(iterator.next().getUrl());
-            }
-
-            @Override
-            public void onBitmapFailed(Drawable errorDrawable) {
-
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-            }
-        });
+        PicassoMarker m = new PicassoMarker(markerOptions);
+        Picasso.with(context).load(iterator.next().getUrl())
+                .resize(size, size).placeholder(R.drawable.holder).into(m);
+//        Picasso.with(context).load(iterator.next().getUrl()).resize(size, size).placeholder(R.drawable.holder).into(new Target() {
+//
+//            @Override
+//            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+//                BitmapDescriptor bitmapMarker = BitmapDescriptorFactory.fromBitmap(bitmap);
+//                //create marker option
+//                if (bitmap != null)
+//                   // clusterImageView.setImageBitmap(bitmap);
+//                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap));
+//                   // markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap)).title(iterator.next().getUrl());
+//            }
+//
+//            @Override
+//            public void onBitmapFailed(Drawable errorDrawable) {
+//
+//            }
+//
+//            @Override
+//            public void onPrepareLoad(Drawable placeHolderDrawable) {
+//
+//            }
+//        });
 
 
         super.onBeforeClusterRendered(cluster, markerOptions);
@@ -110,27 +116,30 @@ public class JobRenderer extends DefaultClusterRenderer<PhotoMapItems> {
     @Override
     protected void onBeforeClusterItemRendered(final PhotoMapItems item,final MarkerOptions markerOptions) {
         int size = 60;
-        Picasso.with(context).load(item.getUrl()).resize(size, size).placeholder(R.drawable.holder).into(new Target() {
-
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                BitmapDescriptor bitmapMarker = BitmapDescriptorFactory.fromBitmap(bitmap);
-                //create marker option
-                if (bitmap != null)
-                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap)).title(item.getUrl());
-                    imageView.setImageBitmap(bitmap);
-            }
-
-            @Override
-            public void onBitmapFailed(Drawable errorDrawable) {
-
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-            }
-        });
+        PicassoMarker m = new PicassoMarker(markerOptions);
+        Picasso.with(context).load(item.getUrl())
+                .resize(size, size).placeholder(R.drawable.holder).into(m);
+//                new Target() {
+//
+//            @Override
+//            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+//                BitmapDescriptor bitmapMarker = BitmapDescriptorFactory.fromBitmap(bitmap);
+//                //create marker option
+//                if (bitmap != null)
+//                    markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap)).title(item.getUrl());
+//                    imageView.setImageBitmap(bitmap);
+//            }
+//
+//            @Override
+//            public void onBitmapFailed(Drawable errorDrawable) {
+//
+//            }
+//
+//            @Override
+//            public void onPrepareLoad(Drawable placeHolderDrawable) {
+//
+//            }
+//        });
         super.onBeforeClusterItemRendered(item, markerOptions);
     }
 
@@ -150,9 +159,46 @@ public class JobRenderer extends DefaultClusterRenderer<PhotoMapItems> {
 //        Bitmap icon = clusterIconGenerator.makeIcon(iterator.next().getName());
 //        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(icon));
 //    }
-
         @Override
         protected boolean shouldRenderAsCluster(Cluster cluster) {
             return cluster.getSize() > 1;
         }
+
+    class PicassoMarker implements Target {
+        MarkerOptions mMarker;
+
+        PicassoMarker(MarkerOptions marker) {
+            mMarker = marker;
+            Log.wtf("PicassoMarker","PicassoMarker");
+        }
+
+        @Override
+        public int hashCode() {
+            return mMarker.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if(o instanceof PicassoMarker) {
+                MarkerOptions marker = ((PicassoMarker) o).mMarker;
+                return mMarker.equals(marker);
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+            mMarker.icon(BitmapDescriptorFactory.fromBitmap(bitmap));
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable errorDrawable) {
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+        }
+    }
 }

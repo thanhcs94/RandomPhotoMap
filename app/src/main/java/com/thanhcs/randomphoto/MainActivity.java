@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         setTitle("1000+ PHOTOS");
         mSwipeRefreshLayout = (SwipeRefreshLayout)findViewById(R.id.swipe_container);
         rv =(RecyclerView)findViewById(R.id.rv);
-        llm = new StaggeredGridLayoutManager(2, 1);
+        llm = new StaggeredGridLayoutManager(3, 1);
         rv.setLayoutManager(llm);
         progressBar2 = (ProgressBar)findViewById(R.id.progressBar3);
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
 //                != PackageManager.PERMISSION_GRANTED) {
-//            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+//            requestPermissions(new String []{android.Manifest.permission.ACCESS_FINE_LOCATION},
 //                    MY_PERMISSIONS_REQUEST_FINE_LOCATION);
 //
 //            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an

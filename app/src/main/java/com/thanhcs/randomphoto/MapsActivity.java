@@ -58,6 +58,7 @@ import java.io.Reader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener
@@ -273,6 +274,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onMarkerClick(Marker marker) {
         Intent i = new Intent(MapsActivity.this , ViewFullPhotoActivity.class);
+        i.putExtra("type", "link");
         i.putExtra("link", marker.getSnippet());
         startActivity(i);
         overridePendingTransition(0,0);
@@ -348,14 +350,41 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .setOnClusterClickListener(new ClusterManager.OnClusterClickListener<PhotoMapItems>() {
                         @Override
                         public boolean onClusterClick(final Cluster<PhotoMapItems> cluster) {
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                                            cluster.getPosition(), (float) Math.floor(mMap
-                                                    .getCameraPosition().zoom + 4)), 300,
-                                    null);
+                            if (mMap.getCameraPosition().zoom < mMap.getMaxZoomLevel() - 4) {
+                                Log.wtf("Cluster Size : ", cluster.getSize() + "");
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                                cluster.getPosition(), (float) Math.floor(mMap
+                                                        .getCameraPosition().zoom + 4)), 300,
+                                        null);
+                            } else {
+                                Iterator<PhotoMapItems> iterator = cluster.getItems().iterator();
+                                ArrayList<String> arrLink = new ArrayList<String>();
+                                while (iterator.hasNext()) {
+                                    PhotoMapItems ob = iterator.next();
+                                    arrLink.add(ob.getUrl());
+                                    Log.wtf("Photo Cluster : ", ob.getUrl());
+                                }
+                                Intent i = new Intent(MapsActivity.this, ViewFullPhotoActivity.class);
+                                i.putExtra("type", "arr");
+                                i.putStringArrayListExtra("arrlink", arrLink);
+                                startActivity(i);
+                                overridePendingTransition(0, 0);
+                            }
                             return true;
                         }
                     });
 
+            mClusterManager.setOnClusterItemClickListener(new ClusterManager.OnClusterItemClickListener<PhotoMapItems>() {
+                @Override
+                public boolean onClusterItemClick(PhotoMapItems photoMapItems) {
+                    Intent i = new Intent(MapsActivity.this , ViewFullPhotoActivity.class);
+                    i.putExtra("type", "link");
+                    i.putExtra("link", photoMapItems.getUrl());
+                    startActivity(i);
+                    overridePendingTransition(0,0);
+                    return false;
+                }
+            });
             for(final PhotoMapItems job: jobs){
                 mClusterManager.addItem(job);
             }
@@ -423,4 +452,5 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
     }
+
 }
